@@ -1,0 +1,64 @@
+#urls.py 
+ 
+from django.urls import path
+from . import views
+
+
+
+urlpatterns = [
+    path('chatbot/', views.chatbot),
+
+# views.py
+
+    from django.shortcuts import render
+import os
+import openai
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_chat_response(messages):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=50,
+        temperature=0.6
+    )
+
+    chat_response = response.choices[0].message['content'].strip()
+    return chat_response
+
+def chatbot(request):
+    messages = [
+        {"role": "system", "content": "You are an LIC agent."},
+    ]
+    
+    if request.method == 'POST':
+        user_input = request.POST.get('user_input')
+        
+        if "end" in user_input:
+            return render(request, 'chatbot.html', {'response': "End of conversation"})
+        
+        messages.append({"role": "user", "content": user_input})
+        chatbot_response = generate_chat_response(messages)
+        
+        return render(request, 'chatbot.html', {'response': chatbot_response})
+
+    return render(request, 'chatbot.html', {'response': ""})
+
+
+    templates/chatbot.html
+
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>Chatbot</title>
+</head>
+<body>
+    <form method="post" action="{% url 'chatbot' %}">
+        {% csrf_token %}
+        <input type="text" name="user_input" id="user-input">
+        <button type="submit">Send</button>
+    </form>
+    <div id="chatbot-response">{{ response }}</div>
+</body>
+</html>
